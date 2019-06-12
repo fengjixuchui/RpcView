@@ -220,12 +220,13 @@ BOOL WINAPI GetRpcServerAddressInProcess(DWORD Pid,RpcCoreInternalCtxt_T* pRpcCo
 	CHAR								ModuleFileName[MAX_PATH];
 	BOOL								bResult=FALSE;
 
-	hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Pid);
+	hProcess = ProcexpOpenProcess(PROCESS_ALL_ACCESS, FALSE, Pid);
 	if (hProcess == NULL) goto End;
 
 	EnumProcessModulesEx(hProcess, NULL, 0, &cbSize, LIST_MODULES_ALL);
 	if (cbSize == 0) goto End;
 	pHmodule = (HMODULE*)malloc(cbSize);
+    if (pHmodule == NULL) goto End;
 	EnumProcessModulesEx(hProcess, pHmodule, cbSize, &cbSize, LIST_MODULES_ALL);
 
 	for(ULONG i=0;i<cbSize/sizeof(*pHmodule);i++)
@@ -289,7 +290,7 @@ VOID* __fastcall RpcCoreInit(BOOL bForce)
 	if (GetSystemDirectoryW(RpcRuntimePath,_countof(RpcRuntimePath))==0) goto End;
 	StringCbPrintfW(RpcRuntimePath,sizeof(RpcRuntimePath),L"%s\\rpcrt4.dll",RpcRuntimePath);
 	RuntimVersion=GetModuleVersion(RpcRuntimePath);
-	for (i = 0; i < sizeof(RPC_CORE_RUNTIME_VERSION); i++)
+	for (i = 0; i < _countof(RPC_CORE_RUNTIME_VERSION); i++)
 	{
 		if (bForce && ((RuntimVersion & 0xFFFFFFFF00000000) == (RPC_CORE_RUNTIME_VERSION[i] & 0xFFFFFFFF00000000)))
 		{
@@ -402,7 +403,7 @@ RpcProcessInfo_T* __fastcall RpcCoreGetProcessInfo(void* pRpcCoreCtxt,DWORD Pid,
 	pRpcProcessInfo->ParentPid		= Ppid;
 	pRpcProcessInfo->RpcProcessType = RpcProcessType_UNKNOWN;
 
-	hProcess=OpenProcess(PROCESS_VM_READ|PROCESS_QUERY_INFORMATION,FALSE,Pid);
+	hProcess=ProcexpOpenProcess(PROCESS_VM_READ|PROCESS_QUERY_INFORMATION,FALSE,Pid);
 	if (hProcess!=NULL)
 	{
 #ifdef _WIN64
@@ -822,7 +823,7 @@ RpcInterfaceInfo_T*	__fastcall RpcCoreGetInterfaceInfo(void* pRpcCoreCtxt,DWORD 
 	RpcInterfaceInfo_T*		pRpcInterfaceInfo		= NULL;
 
 	pRpcCoreInternalCtxt = (RpcCoreInternalCtxt_T*)pRpcCoreCtxt;
-	hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, Pid);
+	hProcess = ProcexpOpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, Pid);
 	if (hProcess == NULL) { DEBUG_BREAK(); goto End; }
 
 	pRpcInterface = GetProcessInterface(pRpcCoreInternalCtxt, hProcess, pIf);
@@ -864,7 +865,7 @@ BOOL __fastcall RpcCoreEnumProcessInterfaces(void* pRpcCoreCtxt,DWORD Pid,RpcCor
 	RpcInterfaceInfo_T*		pRpcInterfaceInfo = NULL;
 	RpcCoreInternalCtxt_T*	pRpcCoreInternalCtxt=(RpcCoreInternalCtxt_T*)pRpcCoreCtxt;
 
-	hProcess=OpenProcess(PROCESS_VM_READ|PROCESS_QUERY_INFORMATION,FALSE,Pid);
+	hProcess=ProcexpOpenProcess(PROCESS_VM_READ|PROCESS_QUERY_INFORMATION,FALSE,Pid);
 	if (hProcess==NULL) goto End;
 
 	if (!ReadProcessMemory(hProcess,pRpcCoreInternalCtxt->pGlobalRpcServer,&pRpcServer,sizeof(VOID PTR_T),NULL)) goto End;
@@ -916,7 +917,7 @@ BOOL __fastcall	RpcCoreEnumProcessEndpoints(void* pRpcCoreCtxt,DWORD Pid,RpcCore
 	BOOL					bContinue=TRUE;
 	RpcCoreInternalCtxt_T*	pRpcCoreInternalCtxt=(RpcCoreInternalCtxt_T*)pRpcCoreCtxt;
 
-	hProcess=OpenProcess(PROCESS_VM_READ,FALSE,Pid);
+	hProcess=ProcexpOpenProcess(PROCESS_VM_READ,FALSE,Pid);
 	if (hProcess==NULL) goto End;
 
 	if (!ReadProcessMemory(hProcess,pRpcCoreInternalCtxt->pGlobalRpcServer,&pRpcServer,sizeof(VOID PTR_T),NULL)) goto End;
@@ -1015,7 +1016,7 @@ BOOL __fastcall RpcCoreEnumProcessAuthInfo(void* pRpcCoreCtxt,DWORD Pid,RpcCoreE
 	if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,L"SOFTWARE\\Microsoft\\Rpc\\SecurityService",0,KEY_READ,&hKey)!=ERROR_SUCCESS) goto End;
 	if (EnumerateSecurityPackagesW(&PackagesCount,&SecurityPackageInfoTbl)!=SEC_E_OK) goto End;
 
-	hProcess=OpenProcess(PROCESS_VM_READ|PROCESS_QUERY_INFORMATION,FALSE,Pid);
+	hProcess=ProcexpOpenProcess(PROCESS_VM_READ|PROCESS_QUERY_INFORMATION,FALSE,Pid);
 	if (hProcess==NULL) goto End;
 
 	if (!ReadProcessMemory(hProcess,pRpcCoreInternalCtxt->pGlobalRpcServer,&pRpcServer,sizeof(VOID PTR_T), NULL)) goto End;

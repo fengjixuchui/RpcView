@@ -193,7 +193,7 @@ BOOL __fastcall	RpcGetProcessData(RpcModuleInfo_T* pRpcModuleInfo, RVA_T Rva, VO
 	if (pRpcModuleInfo == NULL) goto End;
 	pAddress = (VOID*)(pRpcModuleInfo->pModuleBase + Rva);
 
-	hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, pRpcModuleInfo->Pid);
+	hProcess = ProcexpOpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, pRpcModuleInfo->Pid);
 	if (hProcess == NULL) goto End;
 	bResult = ReadProcessMemory(hProcess, pAddress, pBuffer, BufferLength, NULL);
 End:
@@ -271,6 +271,10 @@ void MainWindow_C::SlotDecompileInterface(quint32 Pid, RPC_IF_ID* pIf)
     if (pRpcInterfaceInfo == NULL) goto End;
 	InitDecompilerInfo(pRpcInterfaceInfo, &RpcDecompilerInfo);
 	__try{
+
+		if (!this->pDecompilationWidget->isVisible())
+			this->pDecompilationWidget->show();
+
 		RpcViewHelper_T	LocalRpcViewHelper = {
 			this->pDecompilationWidget,
 			&RpcAlloc,
